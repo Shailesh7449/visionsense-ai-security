@@ -1,0 +1,6 @@
+{
+  "name": "Purplle AI Store Intelligence",
+  "description": "VISION SENSE — AI-Powered Crowd Safety & Violence Detection with real-time YOLOv8, ByteTrack, MMAction2 action recognition, 3D Vision Core, and incident management.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

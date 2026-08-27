@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Security Alert Center</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--vs-text-white);">Security Alert Center</h1>
+            <p style="font-size: 13px; color: var(--vs-text-muted);">Real-time dispatch, threat notification queues, and responder triage.</p>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-audio-toggle" onclick="toggleAudioChime()">
+              🔊 Audio Alert: ON
+            </button>
+            <button class="vs-btn vs-btn-sm" onclick="fetchAlerts()">
+              🔄 Refresh Alerts
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="vs-card" style="padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--vs-text-muted); text-transform: uppercase;">Severity Filter:</span>
+            <div class="vs-tab-bar">
+              <button class="vs-tab-btn active" onclick="filterAlerts('ALL', this)">All</button>
+              <button class="vs-tab-btn" onclick="filterAlerts('CRITICAL', this)">Critical</button>
+              <button class="vs-tab-btn" onclick="filterAlerts('WARNING', this)">Warning</button>
+              <button class="vs-tab-btn" onclick="filterAlerts('INFO', this)">Info</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTS LIST / TABLE -->
+        <div class="vs-card">
+          <div class="vs-table-wrap">
+            <table class="vs-table">
+              <thead>
+                <tr>
+                  <th>Alert ID</th>
+                  <th>Severity</th>
+                  <th>Alert Type</th>
+                  <th>Camera & Location</th>
+                  <th>Confidence</th>
+                  <th>Timestamp</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-table-body">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('alerts', 'Security Threat & Alert Dispatch');
+
+    let allAlerts = [];
+    let activeFilter = 'ALL';
+    let audioEnabled = true;
+
+    function toggleAudioChime() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('btn-audio-toggle').textContent = `🔊 Audio Alert: ${audioEnabled ? 'ON' : 'OFF'}`;
+    }
+
+    async function fetchAlerts() {
+      try {
+        const res = await fetch('/api/alerts');
+        if (res.ok) {
+          allAlerts = await res.json();
+          renderAlerts();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterAlerts(severity, btn) {
+      activeFilter = severity;
+      document.querySelectorAll('.vs-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAlerts();
+    }
+
+    function renderAlerts() {
+      const tbody = document.getElementById('alerts-table-body');
+      let filtered = allAlerts;
+      if (activeFilter !== 'ALL') {
+        filtered = filtered.filter(a => a.severity.toUpperCase() === activeFilter);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 32px; color: var(--vs-text-muted);">
+              ✓ No active alerts matching criteria. All systems normal.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(a => {
+        const tagClass = a.severity === 'CRITICAL' ? 'vs-tag-critical' : (a.severity === 'WARNING' ? 'vs-tag-warning' : 'vs-tag-info');
+        const isResolved = a.status === 'RESOLVED';
+        const isAck = a.status === 'ACKNOWLEDGED';
+
+        return `
+          <tr>
+            <td class="mono"><strong>${a.alert_id}</strong></td>
+            <td><span class="vs-tag ${tagClass}">${a.severity}</span></td>
+            <td><strong style="color: var(--vs-text-white);">${a.type}</strong></td>
+            <td>${a.camera_name || a.camera_id} (${a.location || 'Store Floor'})</td>
+            <td class="mono">${Math.round((a.confidence || 0.9) * 100)}%</td>
+            <td class="mono" style="font-size: 12px;">${new Date(a.timestamp).toLocaleTimeString()}</td>
+            <td>
+              <span class="vs-tag ${isResolved ? 'vs-tag-success' : (isAck ? 'vs-tag-info' : 'vs-tag-warning')}">
+                ${a.status}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 8px;">
+                ${!isAck && !isResolved ? `
+                  <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="ackAlert('${a.alert_id}')">Acknowledge</button>
+                ` : ''}
+                ${!isResolved ? `
+                  <button class="vs-btn vs-btn-sm" onclick="resolveAlert('${a.alert_id}')">Resolve</button>
+                ` : `<span style="color: var(--vs-status-normal); font-size: 12px;">✓ Closed</span>`}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function ackAlert(id) {
+      await fetch(`/api/alerts/${id}/acknowledge`, { method: 'POST' });
+      fetchAlerts();
+      VisionSenseNav.syncSystemStatus();
+    }
+
+    async function resolveAlert(id) {
+      await fetch(`/api/alerts/${id}/resolve`, { method: 'POST' });
+      fetchAlerts();
+      VisionSenseNav.syncSystemStatus();
+    }
+
+    fetchAlerts();
+  </script>
+</body>
+</html>

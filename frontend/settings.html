@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — System & Detection Settings</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--vs-text-white);">System & AI Pipeline Settings</h1>
+            <p style="font-size: 13px; color: var(--vs-text-muted);">Adjust confidence thresholds, crowd safety limits, and dispatch channels.</p>
+          </div>
+          <button class="vs-btn" onclick="saveSettings()">
+            💾 Save Configuration
+          </button>
+        </div>
+
+        <div class="vs-grid-2">
+          <!-- AI Detection Thresholds -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>⚡</span>
+                <span>Threat & Safety Thresholds</span>
+              </div>
+            </div>
+
+            <form id="settings-form" style="display: flex; flex-direction: column; gap: 18px;">
+              <div>
+                <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">
+                  Crowd Density Warning Limit (Persons / Zone)
+                </label>
+                <input type="number" class="vs-input" id="set-crowd-threshold" value="20" min="5" max="100" />
+                <div style="font-size: 11px; color: var(--vs-text-body); margin-top: 4px;">Triggers yellow WARNING when zone occupancy exceeds this number.</div>
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">
+                  MMAction2 Violence Confidence Trigger (%)
+                </label>
+                <input type="number" class="vs-input" id="set-violence-conf" value="80" min="50" max="99" />
+                <div style="font-size: 11px; color: var(--vs-text-body); margin-top: 4px;">Requires AI action recognition confidence >= threshold to raise CRITICAL alert.</div>
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">
+                  Unusual Movement / Speed Anomaly Threshold (%)
+                </label>
+                <input type="number" class="vs-input" id="set-movement-threshold" value="75" min="40" max="95" />
+              </div>
+
+              <div>
+                <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">
+                  Alert Dispatch Sensitivity
+                </label>
+                <select class="vs-select" id="set-sensitivity">
+                  <option value="HIGH">High Sensitivity (Immediate)</option>
+                  <option value="BALANCED">Balanced</option>
+                  <option value="CONSERVATIVE">Conservative (Fewer false alarms)</option>
+                </select>
+              </div>
+            </form>
+          </div>
+
+          <!-- Pipeline & Engine Specifications -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>🤖</span>
+                <span>Active AI Inference Engine</span>
+              </div>
+              <span class="vs-tag vs-tag-success">ACTIVE</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="background: var(--vs-bg-surface); padding: 14px; border-radius: var(--vs-radius-sm);">
+                <div style="font-size: 11px; color: var(--vs-text-muted);">OBJECT DETECTION & TRACKING</div>
+                <div style="font-weight: 700; color: var(--vs-text-white); font-size: 14px; margin-top: 2px;">
+                  Ultralytics YOLOv8x + ByteTrack v2.0
+                </div>
+                <div style="font-size: 12px; color: var(--vs-text-body); margin-top: 4px;">
+                  Multi-object person tracker maintaining continuous trajectory IDs across frames.
+                </div>
+              </div>
+
+              <div style="background: var(--vs-bg-surface); padding: 14px; border-radius: var(--vs-radius-sm);">
+                <div style="font-size: 11px; color: var(--vs-text-muted);">ACTION RECOGNITION BACKBONE</div>
+                <div style="font-weight: 700; color: var(--vs-cyan); font-size: 14px; margin-top: 2px;">
+                  OpenMMLab MMAction2 (SlowFast-ResNet50)
+                </div>
+                <div style="font-size: 12px; color: var(--vs-text-body); margin-top: 4px;">
+                  Spatiotemporal 3D convolution classifying human fighting and aggression patterns.
+                </div>
+              </div>
+
+              <div style="background: var(--vs-bg-surface); padding: 14px; border-radius: var(--vs-radius-sm);">
+                <div style="font-size: 11px; color: var(--vs-text-muted);">HARDWARE ACCELERATION</div>
+                <div style="font-weight: 700; color: var(--vs-status-normal); font-size: 14px; margin-top: 2px;">
+                  NVIDIA CUDA / TensorRT Inference Optimization
+                </div>
+                <div style="font-size: 12px; color: var(--vs-text-body); margin-top: 4px;">
+                  Low-latency streaming operating at 25.0 FPS with sub-400ms end-to-end response.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('settings', 'System & Detection Threshold Settings');
+
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('set-crowd-threshold').value = data.crowd_threshold || 20;
+          document.getElementById('set-violence-conf').value = Math.round((data.violence_confidence_threshold || 0.8) * 100);
+          document.getElementById('set-movement-threshold').value = Math.round((data.unusual_movement_threshold || 0.75) * 100);
+          document.getElementById('set-sensitivity').value = data.alert_sensitivity || 'HIGH';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function saveSettings() {
+      const crowd_threshold = document.getElementById('set-crowd-threshold').value;
+      const violence_confidence_threshold = parseFloat(document.getElementById('set-violence-conf').value) / 100;
+      const unusual_movement_threshold = parseFloat(document.getElementById('set-movement-threshold').value) / 100;
+      const alert_sensitivity = document.getElementById('set-sensitivity').value;
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            crowd_threshold,
+            violence_confidence_threshold,
+            unusual_movement_threshold,
+            alert_sensitivity
+          })
+        });
+        if (res.ok) {
+          alert('✓ System settings updated successfully.');
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>

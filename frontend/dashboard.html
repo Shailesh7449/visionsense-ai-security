@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Security Operations Dashboard</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+  <!-- Three.js for 3D Vision Core rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <!-- 3D VISION CORE CENTERPIECE -->
+        <div class="vs-core-container" id="vision-core-box">
+          <canvas class="vs-core-canvas" id="vision-core-canvas"></canvas>
+
+          <div class="vs-core-overlay">
+            <div class="vs-core-header">
+              <div>
+                <div class="vs-core-title">VISION CORE ACTIVE</div>
+                <div class="vs-core-subtitle">AI-POWERED THREAT RECOGNITION & CROWD TELEMETRY</div>
+              </div>
+              <div class="vs-core-controls">
+                <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-state-normal" onclick="setCoreState('NORMAL')">
+                  🟢 Normal
+                </button>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-state-warning" onclick="setCoreState('WARNING')">
+                  🟡 Warning
+                </button>
+                <button class="vs-btn vs-btn-danger vs-btn-sm" id="btn-state-critical" onclick="setCoreState('CRITICAL')">
+                  🔴 Critical
+                </button>
+              </div>
+            </div>
+
+            <div class="vs-core-telemetry">
+              <div class="vs-telemetry-pill" id="tel-threat">
+                <div class="vs-telemetry-label">Threat Level</div>
+                <div class="vs-telemetry-val" id="val-threat-level">NORMAL</div>
+              </div>
+              <div class="vs-telemetry-pill" id="tel-yolo">
+                <div class="vs-telemetry-label">YOLOv8 + ByteTrack</div>
+                <div class="vs-telemetry-val" style="color: var(--vs-status-normal);" id="val-yolo-status">RUNNING (25 FPS)</div>
+              </div>
+              <div class="vs-telemetry-pill" id="tel-mmaction">
+                <div class="vs-telemetry-label">MMAction2 Violence Engine</div>
+                <div class="vs-telemetry-val" style="color: var(--vs-cyan);" id="val-mmaction-status">ARMED & SCANNING</div>
+              </div>
+              <div class="vs-telemetry-pill" id="tel-cameras">
+                <div class="vs-telemetry-label">CCTV Matrix</div>
+                <div class="vs-telemetry-val" style="color: var(--vs-text-white);" id="val-cctv-online">3 / 3 ONLINE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- METRICS ROW -->
+        <div class="vs-grid-4" style="margin-top: 24px;">
+          <div class="vs-metric-card" id="card-metric-people">
+            <div class="vs-metric-label">
+              <span>People Detected</span>
+              <span>👥</span>
+            </div>
+            <div class="vs-metric-value" id="dash-people-count">12</div>
+            <div class="vs-metric-subtext">
+              <span class="vs-tag vs-tag-success" id="dash-crowd-tag">CROWD: LOW</span>
+              <span>Across all zones</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card" id="card-metric-violence">
+            <div class="vs-metric-label">
+              <span>Violence Detection</span>
+              <span>🛡️</span>
+            </div>
+            <div class="vs-metric-value" style="color: var(--vs-status-normal);" id="dash-violence-status">NORMAL</div>
+            <div class="vs-metric-subtext">
+              <span>Confidence: <strong class="mono" id="dash-violence-conf">8%</strong></span>
+              <span>• Zero threats</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card warning" id="card-metric-alerts">
+            <div class="vs-metric-label">
+              <span>Active Security Alerts</span>
+              <span>🔔</span>
+            </div>
+            <div class="vs-metric-value" style="color: var(--vs-status-warning);" id="dash-active-alerts">2</div>
+            <div class="vs-metric-subtext">
+              <span>1 Overcrowd, 1 Motion anomaly</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card" id="card-metric-cameras">
+            <div class="vs-metric-label">
+              <span>Cameras Online</span>
+              <span>🎥</span>
+            </div>
+            <div class="vs-metric-value" id="dash-cameras-online">3 / 3</div>
+            <div class="vs-metric-subtext">
+              <span class="vs-dot"></span>
+              <span>RTSP Streams Synchronized</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN GRID: LIVE FEEDS & RECENT INCIDENTS -->
+        <div class="vs-grid-2" style="margin-top: 24px;">
+          <!-- Quick Camera Feeds -->
+          <div class="vs-card" id="dash-cameras-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>📹</span>
+                <span>Active Camera Feeds</span>
+              </div>
+              <a href="/analyze" class="vs-btn vs-btn-outline vs-btn-sm" id="btn-goto-monitoring">
+                Full Screen Monitor →
+              </a>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <!-- Mini Stream 1 -->
+              <div style="position: relative; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000; border: 1px solid var(--vs-border-subtle); height: 180px;">
+                <video src="/tracked_store.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; display: flex; gap: 6px; align-items: center;">
+                  <span class="vs-dot"></span>
+                  <span>CAM-01 • South Entrance</span>
+                </div>
+                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(6,182,212,0.25); border: 1px solid var(--vs-border-cyan); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: var(--vs-cyan);">
+                  YOLOv8 DETECT: 8 PERSONS
+                </div>
+              </div>
+
+              <!-- Mini Cameras Grid -->
+              <div class="vs-grid-2" style="gap: 12px;">
+                <div style="background: var(--vs-bg-surface); border: 1px solid var(--vs-border-subtle); border-radius: var(--vs-radius-sm); padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-weight: 700; font-size: 13px; color: var(--vs-text-white);">CAM-02: Makeup Aisle</div>
+                    <div style="font-size: 11px; color: var(--vs-text-muted);">Floor 1 - Zone B</div>
+                  </div>
+                  <span class="vs-tag vs-tag-success">ONLINE</span>
+                </div>
+
+                <div style="background: var(--vs-bg-surface); border: 1px solid var(--vs-border-subtle); border-radius: var(--vs-radius-sm); padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-weight: 700; font-size: 13px; color: var(--vs-text-white);">CAM-03: Cash Register</div>
+                    <div style="font-size: 11px; color: var(--vs-text-muted);">Billing Point</div>
+                  </div>
+                  <span class="vs-tag vs-tag-success">ONLINE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Alerts & Incidents Feed -->
+          <div class="vs-card" id="dash-alerts-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>🔔</span>
+                <span>Active Threat & Incident Feed</span>
+              </div>
+              <a href="/alerts" class="vs-btn vs-btn-outline vs-btn-sm" id="btn-goto-alerts">
+                Manage Alerts →
+              </a>
+            </div>
+
+            <div id="dash-alerts-list" style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Alert 1 -->
+              <div style="background: var(--vs-bg-surface); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--vs-radius-sm); padding: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="vs-tag vs-tag-warning">OVERCROWDING</span>
+                    <strong style="color: var(--vs-text-white); font-size: 13px;">South Entrance Congestion</strong>
+                  </div>
+                  <div style="font-size: 12px; color: var(--vs-text-body);">28 persons detected exceeding threshold limit (20).</div>
+                  <div style="font-size: 11px; color: var(--vs-text-muted); margin-top: 4px;" class="mono">CAM-01 • 4 mins ago</div>
+                </div>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="acknowledgeAlert('ALT-701', this)">Acknowledge</button>
+              </div>
+
+              <!-- Alert 2 -->
+              <div style="background: var(--vs-bg-surface); border: 1px solid rgba(245,158,11,0.3); border-radius: var(--vs-radius-sm); padding: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="vs-tag vs-tag-warning">UNUSUAL MOVEMENT</span>
+                    <strong style="color: var(--vs-text-white); font-size: 13px;">Sudden Trajectory Anomaly</strong>
+                  </div>
+                  <div style="font-size: 12px; color: var(--vs-text-body);">Fast sprint & erratic directional shift detected by ByteTrack.</div>
+                  <div style="font-size: 11px; color: var(--vs-text-muted); margin-top: 4px;" class="mono">CAM-02 • 15 mins ago</div>
+                </div>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="acknowledgeAlert('ALT-702', this)">Acknowledge</button>
+              </div>
+
+              <!-- Log 3 -->
+              <div style="background: var(--vs-bg-surface); border: 1px solid var(--vs-border-subtle); border-radius: var(--vs-radius-sm); padding: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="vs-tag vs-tag-critical">VIOLENCE RESOLVED</span>
+                    <strong style="color: var(--vs-text-white); font-size: 13px;">Physical Altercation Incident</strong>
+                  </div>
+                  <div style="font-size: 12px; color: var(--vs-text-body);">Action Recognition confidence 91% • Case INC-8915 Resolved.</div>
+                  <div style="font-size: 11px; color: var(--vs-text-muted); margin-top: 4px;" class="mono">CAM-03 • 1 hr ago</div>
+                </div>
+                <a href="/incidents" class="vs-btn vs-btn-outline vs-btn-sm">View Evidence</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/vision-core.js"></script>
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    // Initialize Navigation
+    VisionSenseNav.render('dashboard', 'Vision Core Security Operations Center');
+
+    // Initialize 3D Vision Core
+    let coreInstance = null;
+    const canvas = document.getElementById('vision-core-canvas');
+    if (canvas && window.VisionCore) {
+      coreInstance = VisionCore.init(canvas, {
+        interactive: true,
+        showNodes: true,
+        initialStatus: 'NORMAL'
+      });
+    }
+
+    function setCoreState(state) {
+      if (coreInstance) {
+        coreInstance.setStatus(state);
+      }
+      document.getElementById('val-threat-level').textContent = state;
+      const threatPill = document.getElementById('tel-threat');
+      if (state === 'CRITICAL') {
+        document.getElementById('val-threat-level').style.color = 'var(--vs-status-critical)';
+      } else if (state === 'WARNING') {
+        document.getElementById('val-threat-level').style.color = 'var(--vs-status-warning)';
+      } else {
+        document.getElementById('val-threat-level').style.color = 'var(--vs-cyan)';
+      }
+    }
+
+    async function acknowledgeAlert(alertId, btn) {
+      try {
+        const res = await fetch(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
+        if (res.ok) {
+          btn.textContent = '✓ Acknowledged';
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Live Metrics Polling
+    async function pollDashboardMetrics() {
+      try {
+        const res = await fetch('/api/system/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.metrics) {
+            document.getElementById('dash-people-count').textContent = data.metrics.people_detected;
+            document.getElementById('dash-violence-status').textContent = data.metrics.violence_status;
+            document.getElementById('dash-violence-conf').textContent = `${Math.round(data.metrics.violence_confidence * 100)}%`;
+            document.getElementById('dash-active-alerts').textContent = data.metrics.active_alerts;
+            document.getElementById('dash-cameras-online').textContent = `${data.metrics.cameras_online} / ${data.metrics.total_cameras}`;
+            document.getElementById('val-cctv-online').textContent = `${data.metrics.cameras_online} / ${data.metrics.total_cameras} ONLINE`;
+            
+            const crowdTag = document.getElementById('dash-crowd-tag');
+            crowdTag.textContent = `CROWD: ${data.metrics.crowd_level}`;
+            crowdTag.className = `vs-tag ${data.metrics.crowd_level === 'HIGH' ? 'vs-tag-warning' : 'vs-tag-success'}`;
+
+            if (data.risk_level && coreInstance) {
+              coreInstance.setStatus(data.risk_level);
+              document.getElementById('val-threat-level').textContent = data.risk_level;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Dashboard polling:', e);
+      }
+    }
+
+    pollDashboardMetrics();
+    setInterval(pollDashboardMetrics, 3000);
+  </script>
+</body>
+</html>

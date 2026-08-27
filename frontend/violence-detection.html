@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Violence Detection & Action Recognition</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <!-- TOP BANNER STATUS -->
+        <div class="vs-card" style="border-color: var(--vs-border-cyan); margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <div style="font-size: 12px; color: var(--vs-cyan); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                MMAction2 Action Recognition Pipeline
+              </div>
+              <h1 style="font-size: 26px; font-weight: 800; color: var(--vs-text-white); margin-top: 4px;">
+                Violence & Physical Aggression Monitor
+              </h1>
+              <p style="font-size: 13px; color: var(--vs-text-body); margin-top: 4px;">
+                Deep action classification analyzing 32-frame spatio-temporal video snippets for fighting, aggressive striking, and panic movement.
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div class="vs-status-badge normal" id="violence-status-banner" style="font-size: 14px; padding: 10px 18px;">
+                <span class="vs-dot" id="violence-dot"></span>
+                <span id="violence-status-text">STATUS: NORMAL</span>
+              </div>
+              <button class="vs-btn vs-btn-danger vs-btn-sm" onclick="triggerTestViolence()">
+                Simulate Threat Alert
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN GRID: LIVE SCANNER & CONFIDENCE TIMELINE -->
+        <div class="vs-grid-2" style="margin-bottom: 24px;">
+          <!-- Video Action Scanner -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>📹</span>
+                <span>Active MMAction2 Video Stream</span>
+              </div>
+              <span class="vs-tag vs-tag-info" class="mono">CAM-01 • 32 FRAMES/WINDOW</span>
+            </div>
+
+            <div style="position: relative; height: 260px; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000; margin-bottom: 16px;">
+              <video src="/tracked_store.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div style="position: absolute; top: 12px; left: 12px; background: rgba(12,17,29,0.85); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--vs-cyan); border: 1px solid var(--vs-border-cyan);">
+                ACTION CLASS: NORMAL_MOVEMENT
+              </div>
+              <div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 4px; font-size: 11px; color: #fff;" class="mono">
+                CONFIDENCE: 92% NON-VIOLENT
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+              <span style="color: var(--vs-text-muted);">Inference Model:</span>
+              <strong style="color: var(--vs-text-white);">SlowFast ResNet-50 MMAction2</strong>
+            </div>
+          </div>
+
+          <!-- Confidence Meter & Action Breakdown -->
+          <div class="vs-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="vs-card-header">
+                <div class="vs-card-title">
+                  <span>⚡</span>
+                  <span>Action Recognition Confidence</span>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                  <span style="color: var(--vs-text-body);">Normal Interaction / Walking</span>
+                  <span class="mono" style="font-weight: 700; color: var(--vs-status-normal);">92%</span>
+                </div>
+                <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
+                  <div style="width: 92%; height: 100%; background: var(--vs-status-normal);"></div>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                  <span style="color: var(--vs-text-body);">Aggressive / Physical Altercation</span>
+                  <span class="mono" style="font-weight: 700; color: var(--vs-status-critical);" id="violence-conf-val">8%</span>
+                </div>
+                <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
+                  <div id="violence-bar" style="width: 8%; height: 100%; background: var(--vs-status-critical); transition: width 0.3s ease;"></div>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                  <span style="color: var(--vs-text-body);">Erratic / Sudden Panic Movement</span>
+                  <span class="mono" style="font-weight: 700; color: var(--vs-status-warning);">14%</span>
+                </div>
+                <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden;">
+                  <div style="width: 14%; height: 100%; background: var(--vs-status-warning);"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--vs-bg-surface); padding: 14px; border-radius: var(--vs-radius-sm); border: 1px solid var(--vs-border-subtle);">
+              <div style="font-size: 12px; color: var(--vs-text-muted);">Threshold Setting:</div>
+              <div style="font-size: 13px; color: var(--vs-text-white); margin-top: 2px;">
+                Alert triggers if aggression confidence exceeds <strong>80.0%</strong> for > 1.5 seconds.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT VIOLENCE INCIDENT LOGS -->
+        <div class="vs-card">
+          <div class="vs-card-header">
+            <div class="vs-card-title">
+              <span>📋</span>
+              <span>Recent Violence Detections & Action Logs</span>
+            </div>
+          </div>
+
+          <div class="vs-table-wrap">
+            <table class="vs-table">
+              <thead>
+                <tr>
+                  <th>Detection ID</th>
+                  <th>Camera & Location</th>
+                  <th>Action Class</th>
+                  <th>Confidence</th>
+                  <th>Timestamp</th>
+                  <th>Incident Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="violence-table-body">
+                <tr>
+                  <td class="mono">VD-301</td>
+                  <td><strong>CAM-03: Checkout Counter 1-3</strong> (Billing Point)</td>
+                  <td><span class="vs-tag vs-tag-critical">PHYSICAL FIGHT / STRIKING</span></td>
+                  <td class="mono" style="font-weight: 700; color: var(--vs-status-critical);">91%</td>
+                  <td class="mono">1 hr ago</td>
+                  <td><span class="vs-tag vs-tag-success">RESOLVED (INC-8915)</span></td>
+                  <td>
+                    <a href="/incidents" class="vs-btn vs-btn-outline vs-btn-sm">Review Incident</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('violence', 'MMAction2 Violence & Aggression Intelligence');
+
+    async function triggerTestViolence() {
+      const banner = document.getElementById('violence-status-banner');
+      const text = document.getElementById('violence-status-text');
+      const dot = document.getElementById('violence-dot');
+      const bar = document.getElementById('violence-bar');
+      const confVal = document.getElementById('violence-conf-val');
+
+      banner.className = 'vs-status-badge critical';
+      text.textContent = 'STATUS: VIOLENCE DETECTED';
+      dot.className = 'vs-dot critical';
+      bar.style.width = '94%';
+      confVal.textContent = '94%';
+
+      await fetch('/api/violence/toggle-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'VIOLENCE DETECTED', confidence: 0.94, camera_id: 'CAM-01' })
+      });
+
+      VisionSenseNav.syncSystemStatus();
+      alert('⚠️ ALERT TRIGGERED: Violence signature detected on CAM-01! MMAction2 logged incident.');
+    }
+  </script>
+</body>
+</html>

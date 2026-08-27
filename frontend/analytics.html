@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Security Analytics & Operations Intelligence</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <!-- TOP SUMMARY CARDS -->
+        <div class="vs-grid-4" style="margin-bottom: 24px;">
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Total Incidents (24h)</span>
+              <span>📋</span>
+            </div>
+            <div class="vs-metric-value">4</div>
+            <div class="vs-metric-subtext">
+              <span class="vs-tag vs-tag-success">3 RESOLVED</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Violence Incidents</span>
+              <span>🛡️</span>
+            </div>
+            <div class="vs-metric-value" style="color: var(--vs-status-critical);">1</div>
+            <div class="vs-metric-subtext">
+              <span>Resolved by security team</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Crowd Surges Logged</span>
+              <span>👥</span>
+            </div>
+            <div class="vs-metric-value" style="color: var(--vs-status-warning);">2</div>
+            <div class="vs-metric-subtext">
+              <span>Peak at 19:00 - 20:00</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Camera Network Uptime</span>
+              <span>📶</span>
+            </div>
+            <div class="vs-metric-value" style="color: var(--vs-cyan);">99.8%</div>
+            <div class="vs-metric-subtext">
+              <span>3 Active RTSP Streams</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS GRID -->
+        <div class="vs-grid-2" style="margin-bottom: 24px;">
+          <!-- 24-Hour Threat & Incident Timeline -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>📈</span>
+                <span>24-Hour Incident Volume & Severity</span>
+              </div>
+            </div>
+            <div style="height: 280px; position: relative;">
+              <canvas id="incident-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Breakdown by Incident Type -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>🎯</span>
+                <span>Incident Distribution by Threat Category</span>
+              </div>
+            </div>
+            <div style="height: 280px; position: relative;">
+              <canvas id="category-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA PERFORMANCE & RESPONSE TIME METRICS -->
+        <div class="vs-grid-2">
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>⏱️</span>
+                <span>Security Response Performance</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">Average Incident Detection Latency</span>
+                <span class="mono" style="font-weight: 700; color: var(--vs-cyan);">320 ms</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">Average Responder Acknowledge Time</span>
+                <span class="mono" style="font-weight: 700; color: var(--vs-text-white);">1.4 mins</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">Incident Resolution Rate</span>
+                <span class="mono" style="font-weight: 700; color: var(--vs-status-normal);">100% (Today)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">YOLOv8 + ByteTrack Frame Accuracy</span>
+                <span class="mono" style="font-weight: 700; color: var(--vs-cyan);">96.8%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>🎥</span>
+                <span>Camera Stream Health Metrics</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">CAM-01 • South Entrance</span>
+                <span class="vs-tag vs-tag-success">100% Uptime (25 FPS)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">CAM-02 • Makeup & Beauty</span>
+                <span class="vs-tag vs-tag-success">100% Uptime (25 FPS)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">CAM-03 • Checkout Counters</span>
+                <span class="vs-tag vs-tag-success">99.4% Uptime (25 FPS)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--vs-text-body);">CAM-04 • Back Loading Bay</span>
+                <span class="vs-tag vs-tag-info">Reconnected (30 FPS)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('analytics', 'Security Analytics & Operations Intelligence');
+
+    const ctxIncidents = document.getElementById('incident-chart').getContext('2d');
+    new Chart(ctxIncidents, {
+      type: 'bar',
+      data: {
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '18:00', '20:00', '22:00'],
+        datasets: [
+          {
+            label: 'Critical / Violence',
+            data: [0, 0, 0, 0, 0, 0, 1, 0],
+            backgroundColor: '#ef4444'
+          },
+          {
+            label: 'Warning / Overcrowd',
+            data: [0, 0, 0, 1, 0, 1, 1, 0],
+            backgroundColor: '#f59e0b'
+          },
+          {
+            label: 'Info / Camera Status',
+            data: [0, 0, 1, 0, 0, 0, 0, 0],
+            backgroundColor: '#06b6d4'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8' } } },
+        scales: {
+          x: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+          y: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+
+    const ctxCategory = document.getElementById('category-chart').getContext('2d');
+    new Chart(ctxCategory, {
+      type: 'pie',
+      data: {
+        labels: ['Overcrowding (50%)', 'Unusual Movement (25%)', 'Violence Altercation (25%)'],
+        datasets: [{
+          data: [2, 1, 1],
+          backgroundColor: ['#f59e0b', '#3b82f6', '#ef4444'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } }
+      }
+    });
+  </script>
+</body>
+</html>

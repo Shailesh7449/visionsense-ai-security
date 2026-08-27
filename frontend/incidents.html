@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Security Incident Management</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--vs-text-white);">Incident Management & Evidence Review</h1>
+            <p style="font-size: 13px; color: var(--vs-text-muted);">Audit logs, video evidence snippets, confidence levels, and responder resolution tracking.</p>
+          </div>
+
+          <button class="vs-btn" onclick="openCreateIncidentModal()">
+            ➕ Log Manual Incident
+          </button>
+        </div>
+
+        <!-- SEARCH & FILTER ROW -->
+        <div class="vs-card" style="padding: 16px; margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px;">
+            <input type="text" class="vs-input" id="search-incidents" placeholder="🔍 Search incidents by ID, description or location..." oninput="filterIncidents()" />
+            <select class="vs-select" id="filter-status" onchange="filterIncidents()">
+              <option value="ALL">All Statuses</option>
+              <option value="NEW">New</option>
+              <option value="INVESTIGATING">Investigating</option>
+              <option value="ACKNOWLEDGED">Acknowledged</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+            <select class="vs-select" id="filter-type" onchange="filterIncidents()">
+              <option value="ALL">All Incident Types</option>
+              <option value="VIOLENCE">Violence / Fight</option>
+              <option value="OVERCROWDING">Overcrowding</option>
+              <option value="UNUSUAL MOVEMENT">Unusual Movement</option>
+              <option value="CAMERA OFFLINE">Camera Offline</option>
+            </select>
+            <select class="vs-select" id="filter-severity" onchange="filterIncidents()">
+              <option value="ALL">All Severities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="WARNING">Warning</option>
+              <option value="INFO">Info</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- INCIDENTS TABLE -->
+        <div class="vs-card">
+          <div class="vs-table-wrap">
+            <table class="vs-table">
+              <thead>
+                <tr>
+                  <th>Incident ID</th>
+                  <th>Type</th>
+                  <th>Severity</th>
+                  <th>Camera & Location</th>
+                  <th>Timestamp</th>
+                  <th>AI Confidence</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="incidents-table-body">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- EVIDENCE REVIEW MODAL -->
+  <div class="vs-modal-backdrop" id="evidence-modal">
+    <div class="vs-modal" style="max-width: 750px;">
+      <div class="vs-card-header">
+        <div class="vs-card-title">
+          <span>📁</span>
+          <span id="ev-modal-title">Incident Evidence: INC-8915</span>
+        </div>
+        <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="closeEvidenceModal()">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Evidence Video Snippet -->
+        <div style="position: relative; height: 260px; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000;">
+          <video id="ev-video" src="/tracked_store.mp4" controls autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+          <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px; font-size: 11px; color: var(--vs-status-critical);" id="ev-type-badge">
+            CRITICAL VIOLENCE
+          </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="vs-grid-2" style="background: var(--vs-bg-surface); padding: 16px; border-radius: var(--vs-radius-sm);">
+          <div>
+            <div style="font-size: 11px; color: var(--vs-text-muted);">CAMERA & LOCATION</div>
+            <div style="font-weight: 700; color: var(--vs-text-white); font-size: 13px;" id="ev-cam-loc">CAM-03 • Checkout Counter</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--vs-text-muted);">AI DETECTION ENGINE</div>
+            <div style="font-weight: 700; color: var(--vs-cyan); font-size: 13px;" id="ev-engine">MMAction2 SlowFast (91% Conf)</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 11px; color: var(--vs-text-muted); margin-bottom: 4px;">INCIDENT DESCRIPTION</div>
+          <p style="font-size: 13px; color: var(--vs-text-body); background: var(--vs-bg-surface); padding: 12px; border-radius: var(--vs-radius-sm);" id="ev-desc">
+            Physical altercation detected near cash register counter (resolved by on-floor security).
+          </p>
+        </div>
+
+        <!-- Status Workflow Selector -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--vs-border-subtle); padding-top: 16px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="font-size: 12px; color: var(--vs-text-muted);">Update Status:</span>
+            <select class="vs-select" id="ev-status-select" style="width: auto;">
+              <option value="NEW">NEW</option>
+              <option value="ACKNOWLEDGED">ACKNOWLEDGED</option>
+              <option value="INVESTIGATING">INVESTIGATING</option>
+              <option value="RESOLVED">RESOLVED</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="vs-btn vs-btn-outline" onclick="closeEvidenceModal()">Close</button>
+            <button class="vs-btn" onclick="saveIncidentStatus()">Save Status</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('incidents', 'Security Incident Management');
+
+    let allIncidents = [];
+    let selectedIncident = null;
+
+    async function loadIncidents() {
+      try {
+        const res = await fetch('/api/incidents');
+        if (res.ok) {
+          allIncidents = await res.json();
+          filterIncidents();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function filterIncidents() {
+      const q = document.getElementById('search-incidents').value.toLowerCase();
+      const status = document.getElementById('filter-status').value;
+      const type = document.getElementById('filter-type').value;
+      const severity = document.getElementById('filter-severity').value;
+
+      let filtered = allIncidents.filter(inc => {
+        const matchQ = !q || inc.id.toLowerCase().includes(q) || inc.description.toLowerCase().includes(q) || inc.location.toLowerCase().includes(q);
+        const matchStatus = status === 'ALL' || inc.status.toUpperCase() === status;
+        const matchType = type === 'ALL' || inc.type.toUpperCase() === type;
+        const matchSev = severity === 'ALL' || inc.severity.toUpperCase() === severity;
+        return matchQ && matchStatus && matchType && matchSev;
+      });
+
+      renderIncidentsTable(filtered);
+    }
+
+    function renderIncidentsTable(list) {
+      const tbody = document.getElementById('incidents-table-body');
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 32px; color: var(--vs-text-muted);">
+              No incident records found matching your filters.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = list.map(i => {
+        const tagClass = i.severity === 'CRITICAL' ? 'vs-tag-critical' : (i.severity === 'WARNING' ? 'vs-tag-warning' : 'vs-tag-info');
+        const statusClass = i.status === 'RESOLVED' ? 'vs-tag-success' : (i.status === 'INVESTIGATING' ? 'vs-tag-warning' : 'vs-tag-info');
+
+        return `
+          <tr>
+            <td class="mono"><strong>${i.id}</strong></td>
+            <td><strong style="color: var(--vs-text-white);">${i.type}</strong></td>
+            <td><span class="vs-tag ${tagClass}">${i.severity}</span></td>
+            <td>${i.camera_name} <span style="color: var(--vs-text-muted); font-size: 11px;">(${i.location})</span></td>
+            <td class="mono" style="font-size: 12px;">${new Date(i.timestamp).toLocaleTimeString()}</td>
+            <td class="mono">${Math.round((i.confidence || 0.9) * 100)}%</td>
+            <td><span class="vs-tag ${statusClass}">${i.status}</span></td>
+            <td>
+              <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="openEvidence('${i.id}')">
+                Review Evidence
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openEvidence(id) {
+      selectedIncident = allIncidents.find(i => i.id === id);
+      if (!selectedIncident) return;
+
+      document.getElementById('ev-modal-title').textContent = `Incident Evidence: ${selectedIncident.id}`;
+      document.getElementById('ev-cam-loc').textContent = `${selectedIncident.camera_name} • ${selectedIncident.location}`;
+      document.getElementById('ev-desc').textContent = selectedIncident.description;
+      document.getElementById('ev-type-badge').textContent = `${selectedIncident.severity} ${selectedIncident.type}`;
+      document.getElementById('ev-status-select').value = selectedIncident.status;
+      document.getElementById('evidence-modal').classList.add('active');
+    }
+
+    function closeEvidenceModal() {
+      document.getElementById('evidence-modal').classList.remove('active');
+    }
+
+    async function saveIncidentStatus() {
+      if (!selectedIncident) return;
+      const newStatus = document.getElementById('ev-status-select').value;
+      try {
+        const res = await fetch(`/api/incidents/${selectedIncident.id}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          alert(`✓ Incident ${selectedIncident.id} updated to ${newStatus}`);
+          closeEvidenceModal();
+          loadIncidents();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function openCreateIncidentModal() {
+      const type = prompt("Enter Incident Type (VIOLENCE, OVERCROWDING, UNUSUAL MOVEMENT):", "VIOLENCE");
+      if (!type) return;
+      const desc = prompt("Enter Incident Description:", "Manual incident logged by floor security.");
+      fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: type.toUpperCase(),
+          camera_id: 'CAM-01',
+          camera_name: 'South Entrance Cam',
+          location: 'Main Entrance',
+          severity: 'WARNING',
+          description: desc
+        })
+      }).then(() => loadIncidents());
+    }
+
+    loadIncidents();
+  </script>
+</body>
+</html>

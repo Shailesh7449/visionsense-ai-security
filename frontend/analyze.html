@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Live Monitoring & AI Video Intelligence</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <!-- HEADER CONTROLS & SOURCE TABS -->
+        <div class="vs-card" style="margin-bottom: 24px;">
+          <div class="vs-card-header">
+            <div class="vs-card-title">
+              <span>📹</span>
+              <span>Video Input Source Selection</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span class="vs-tag vs-tag-info" id="active-source-badge">SOURCE: DEMO VIDEO</span>
+              <button class="vs-btn vs-btn-sm" id="btn-toggle-engine" onclick="toggleEngineState()">
+                ▶ Resume AI Engine
+              </button>
+            </div>
+          </div>
+
+          <!-- Source Tabs -->
+          <div class="vs-grid-4" style="gap: 12px;" id="source-tab-container">
+            <div class="vs-card" style="padding: 16px; cursor: pointer; text-align: center; border-color: var(--vs-border-cyan);" id="tab-demo" onclick="selectSource('demo')">
+              <div style="font-size: 24px; margin-bottom: 6px;">🎬</div>
+              <div style="font-weight: 700; color: var(--vs-text-white); font-size: 14px;">Demo Video</div>
+              <div style="font-size: 11px; color: var(--vs-text-muted);">Standard Benchmark Footage</div>
+            </div>
+
+            <div class="vs-card" style="padding: 16px; cursor: pointer; text-align: center;" id="tab-upload" onclick="selectSource('upload')">
+              <div style="font-size: 24px; margin-bottom: 6px;">📤</div>
+              <div style="font-weight: 700; color: var(--vs-text-white); font-size: 14px;">Upload Video</div>
+              <div style="font-size: 11px; color: var(--vs-text-muted);">Local MP4 / AVI File</div>
+            </div>
+
+            <div class="vs-card" style="padding: 16px; cursor: pointer; text-align: center;" id="tab-webcam" onclick="selectSource('webcam')">
+              <div style="font-size: 24px; margin-bottom: 6px;">📸</div>
+              <div style="font-weight: 700; color: var(--vs-text-white); font-size: 14px;">Live Webcam</div>
+              <div style="font-size: 11px; color: var(--vs-text-muted);">Real-Time Local Camera</div>
+            </div>
+
+            <div class="vs-card" style="padding: 16px; cursor: pointer; text-align: center;" id="tab-cctv" onclick="selectSource('cctv')">
+              <div style="font-size: 24px; margin-bottom: 6px;">📡</div>
+              <div style="font-weight: 700; color: var(--vs-text-white); font-size: 14px;">CCTV / RTSP Stream</div>
+              <div style="font-size: 11px; color: var(--vs-text-muted);">Network IP Camera</div>
+            </div>
+          </div>
+
+          <!-- Source Specific Configuration Drawers -->
+          <div id="panel-upload" style="display: none; margin-top: 16px; background: var(--vs-bg-surface); padding: 18px; border-radius: var(--vs-radius-sm); border: 1px dashed var(--vs-border-cyan);">
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <input type="file" id="video-file-input" accept=".mp4,.avi,.mov,.mkv" style="display: none;" onchange="handleFileUpload(this.files[0])" />
+              <button class="vs-btn vs-btn-sm" onclick="document.getElementById('video-file-input').click()">
+                Select Video File (MP4)
+              </button>
+              <span id="upload-status-text" style="font-size: 13px; color: var(--vs-text-body);">No custom file chosen yet</span>
+            </div>
+          </div>
+
+          <div id="panel-cctv" style="display: none; margin-top: 16px; background: var(--vs-bg-surface); padding: 18px; border-radius: var(--vs-radius-sm); border: 1px solid var(--vs-border-subtle);">
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <select class="vs-select" id="cctv-select" style="max-width: 320px;" onchange="handleCameraSelect(this.value)">
+                <option value="cam-01">CAM-01 • South Entrance Cam (192.168.1.101)</option>
+                <option value="cam-02">CAM-02 • Makeup & Beauty Aisle (192.168.1.102)</option>
+                <option value="cam-03">CAM-03 • Checkout Counter 1-3 (192.168.1.103)</option>
+              </select>
+              <button class="vs-btn vs-btn-sm" onclick="connectCctvStream()">Connect RTSP</button>
+              <span style="font-size: 12px; color: var(--vs-text-muted);" class="mono">rtsp://***:***@192.168.1.101:554/live/ch0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN MONITORING STAGE & SIDE TELEMETRY -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+          <!-- Video Monitor Container -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="vs-player-container" id="monitor-stage">
+              <!-- Video Elements -->
+              <video id="main-video-player" src="/tracked_store.mp4" autoplay loop muted playsinline class="vs-video-element"></video>
+              <video id="webcam-player" autoplay playsinline muted class="vs-video-element" style="display: none;"></video>
+              <canvas id="detection-canvas" class="vs-canvas-overlay"></canvas>
+
+              <!-- Top HUD -->
+              <div class="vs-hud-top">
+                <div class="vs-hud-badge">
+                  <span class="vs-dot" id="hud-live-dot"></span>
+                  <span id="hud-camera-label">CAM-01 • SOUTH FOYER</span>
+                </div>
+                <div class="vs-hud-badge" style="border-color: var(--vs-border-cyan); color: var(--vs-cyan);">
+                  <span>YOLOv8 + ByteTrack</span>
+                  <span class="mono" id="hud-fps">25.0 FPS</span>
+                </div>
+              </div>
+
+              <!-- Bottom HUD -->
+              <div class="vs-hud-bottom">
+                <div class="vs-hud-badge" id="hud-crowd-badge">
+                  <span>CROWD:</span>
+                  <strong id="hud-people-val" style="color: var(--vs-cyan);">12 PERSONS</strong>
+                </div>
+                <div class="vs-hud-badge" id="hud-violence-badge" style="border-color: var(--vs-status-normal-border); color: var(--vs-status-normal);">
+                  <span>MMACTION2:</span>
+                  <strong id="hud-violence-val">NORMAL (92% SAFE)</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls bar -->
+            <div class="vs-card" style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; gap: 10px;">
+                <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-snapshot" onclick="captureSnapshot()">
+                  📸 Capture Evidence Frame
+                </button>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-fullscreen" onclick="toggleFullscreen()">
+                  ⛶ Fullscreen
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="vs-btn vs-btn-danger vs-btn-sm" id="btn-sim-violence" onclick="triggerSimulatedThreat('VIOLENCE')">
+                  ⚠️ Simulate Violence Alert
+                </button>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" id="btn-sim-overcrowd" onclick="triggerSimulatedThreat('OVERCROWDING')">
+                  👥 Simulate Overcrowd
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Telemetry & Event Stream Panel -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Real-Time Metrics -->
+            <div class="vs-card">
+              <div class="vs-card-header">
+                <div class="vs-card-title">
+                  <span>📊</span>
+                  <span>AI Telemetry</span>
+                </div>
+                <span class="vs-tag vs-tag-success" id="engine-badge">ONLINE</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
+                  <span style="font-size: 13px; color: var(--vs-text-muted);">Current People Tracked</span>
+                  <span class="mono" style="font-weight: 700; color: var(--vs-text-white);" id="tel-tracked-count">12</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
+                  <span style="font-size: 13px; color: var(--vs-text-muted);">Crowd Congestion</span>
+                  <span class="vs-tag vs-tag-info" id="tel-crowd-density">LOW (60%)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
+                  <span style="font-size: 13px; color: var(--vs-text-muted);">Action Recognition Model</span>
+                  <span class="mono" style="font-size: 12px; color: var(--vs-cyan);">MMAction2 SlowFast</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
+                  <span style="font-size: 13px; color: var(--vs-text-muted);">Threat Risk Rating</span>
+                  <span class="vs-tag vs-tag-success" id="tel-threat-rating">NORMAL</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Event Detection Log -->
+            <div class="vs-card" style="flex: 1;">
+              <div class="vs-card-header">
+                <div class="vs-card-title">
+                  <span>⚡</span>
+                  <span>Real-Time Event Stream</span>
+                </div>
+              </div>
+
+              <div id="live-event-stream" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">
+                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-cyan);">
+                  <div style="display: flex; justify-content: space-between;">
+                    <strong style="color: var(--vs-text-white);">Track #21 • Zone Entered</strong>
+                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">Just now</span>
+                  </div>
+                  <div style="color: var(--vs-text-body); font-size: 11px;">Track ID 21 crossed entrance boundary line.</div>
+                </div>
+
+                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-status-normal);">
+                  <div style="display: flex; justify-content: space-between;">
+                    <strong style="color: var(--vs-text-white);">MMAction2 Inference</strong>
+                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">2s ago</span>
+                  </div>
+                  <div style="color: var(--vs-text-body); font-size: 11px;">Scanned 32-frame buffer: Standing / Walking (94%).</div>
+                </div>
+
+                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-cyan);">
+                  <div style="display: flex; justify-content: space-between;">
+                    <strong style="color: var(--vs-text-white);">Track #17 • Movement Vector</strong>
+                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">5s ago</span>
+                  </div>
+                  <div style="color: var(--vs-text-body); font-size: 11px;">Dwell time 42s in Beauty Zone.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('monitoring', 'Live CCTV Monitoring & AI Video Intelligence');
+
+    let currentSource = 'demo';
+    let isRunning = true;
+    let webcamStream = null;
+    let pollInterval = null;
+
+    const mainVideo = document.getElementById('main-video-player');
+    const webcamPlayer = document.getElementById('webcam-player');
+    const canvas = document.getElementById('detection-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function selectSource(source) {
+      currentSource = source;
+      ['demo', 'upload', 'webcam', 'cctv'].forEach(s => {
+        const tab = document.getElementById(`tab-${s}`);
+        if (tab) {
+          tab.style.borderColor = s === source ? 'var(--vs-border-cyan)' : 'var(--vs-border-subtle)';
+          tab.style.background = s === source ? 'rgba(6, 182, 212, 0.1)' : 'var(--vs-bg-card)';
+        }
+      });
+
+      document.getElementById('panel-upload').style.display = source === 'upload' ? 'block' : 'none';
+      document.getElementById('panel-cctv').style.display = source === 'cctv' ? 'block' : 'none';
+      document.getElementById('active-source-badge').textContent = `SOURCE: ${source.toUpperCase()}`;
+
+      if (source === 'webcam') {
+        startWebcam();
+      } else {
+        stopWebcam();
+        mainVideo.style.display = 'block';
+        webcamPlayer.style.display = 'none';
+        if (source === 'demo') {
+          mainVideo.src = '/tracked_store.mp4';
+          mainVideo.play();
+          document.getElementById('hud-camera-label').textContent = 'DEMO BENCHMARK STREAM';
+        }
+      }
+    }
+
+    async function startWebcam() {
+      try {
+        mainVideo.style.display = 'none';
+        webcamPlayer.style.display = 'block';
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        webcamPlayer.srcObject = webcamStream;
+        document.getElementById('hud-camera-label').textContent = 'LOCAL WEBCAM FEED';
+      } catch (err) {
+        alert('Webcam access error: ' + err.message);
+        selectSource('demo');
+      }
+    }
+
+    function stopWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(t => t.stop());
+        webcamStream = null;
+      }
+    }
+
+    async function handleFileUpload(file) {
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      document.getElementById('upload-status-text').textContent = `Uploading ${file.name}...`;
+
+      try {
+        const res = await fetch('/api/video/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('upload-status-text').textContent = `✓ Uploaded ${file.name}. Starting AI pipeline...`;
+          mainVideo.src = `/api/video/file/${data.stored_filename}`;
+          mainVideo.play();
+          document.getElementById('hud-camera-label').textContent = `UPLOAD: ${file.name}`;
+        }
+      } catch (e) {
+        console.error(e);
+        document.getElementById('upload-status-text').textContent = `Upload failed: ${e.message}`;
+      }
+    }
+
+    function connectCctvStream() {
+      const camId = document.getElementById('cctv-select').value;
+      mainVideo.src = '/tracked_store.mp4';
+      mainVideo.play();
+      document.getElementById('hud-camera-label').textContent = `RTSP: ${camId.toUpperCase()}`;
+      alert(`Connected to secure RTSP stream: ${camId}`);
+    }
+
+    function toggleEngineState() {
+      isRunning = !isRunning;
+      const btn = document.getElementById('btn-toggle-engine');
+      if (isRunning) {
+        btn.textContent = '⏸ Pause AI Engine';
+        btn.className = 'vs-btn vs-btn-outline vs-btn-sm';
+        mainVideo.play();
+      } else {
+        btn.textContent = '▶ Resume AI Engine';
+        btn.className = 'vs-btn vs-btn-sm';
+        mainVideo.pause();
+      }
+    }
+
+    function captureSnapshot() {
+      const activeVid = currentSource === 'webcam' ? webcamPlayer : mainVideo;
+      const snapCanvas = document.createElement('canvas');
+      snapCanvas.width = activeVid.videoWidth || 640;
+      snapCanvas.height = activeVid.videoHeight || 360;
+      const sCtx = snapCanvas.getContext('2d');
+      sCtx.drawImage(activeVid, 0, 0);
+
+      const link = document.createElement('a');
+      link.download = `evidence_frame_${Date.now()}.png`;
+      link.href = snapCanvas.toDataURL();
+      link.click();
+    }
+
+    function toggleFullscreen() {
+      const stage = document.getElementById('monitor-stage');
+      if (!document.fullscreenElement) {
+        stage.requestFullscreen().catch(err => alert(err.message));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    async function triggerSimulatedThreat(type) {
+      if (type === 'VIOLENCE') {
+        await fetch('/api/violence/toggle-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'VIOLENCE DETECTED', confidence: 0.94, camera_id: 'CAM-01' })
+        });
+        document.getElementById('hud-violence-badge').style.borderColor = 'var(--vs-status-critical-border)';
+        document.getElementById('hud-violence-badge').style.color = 'var(--vs-status-critical)';
+        document.getElementById('hud-violence-val').textContent = '⚠️ VIOLENCE DETECTED (94%)';
+        alert('⚠️ CRITICAL ALERT: Violence signature detected on CAM-01! Incident logged.');
+      } else if (type === 'OVERCROWDING') {
+        await fetch('/api/incidents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'OVERCROWDING',
+            camera_id: 'CAM-01',
+            severity: 'WARNING',
+            description: 'Crowd density exceeded threshold limit.'
+          })
+        });
+        alert('🟡 WARNING: Overcrowding surge detected! Security notified.');
+      }
+      VisionSenseNav.syncSystemStatus();
+    }
+
+    // Dynamic HUD Bounding Boxes simulation on video
+    function drawHudOverlay() {
+      if (!canvas) return;
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isRunning) {
+        // Draw synthetic bounding boxes for demo visualization
+        const t = Date.now() / 1000;
+        const boxes = [
+          { x: (Math.sin(t * 0.5) * 0.15 + 0.3) * canvas.width, y: 0.35 * canvas.height, w: 60, h: 120, id: 'ID-21', conf: '0.94' },
+          { x: (Math.cos(t * 0.4) * 0.12 + 0.55) * canvas.width, y: 0.40 * canvas.height, w: 55, h: 110, id: 'ID-17', conf: '0.88' },
+          { x: 0.75 * canvas.width, y: 0.45 * canvas.height, w: 50, h: 100, id: 'ID-09', conf: '0.91' }
+        ];
+
+        boxes.forEach(b => {
+          ctx.strokeStyle = '#06b6d4';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+          // Corner cyber accents
+          ctx.fillStyle = '#06b6d4';
+          ctx.fillRect(b.x - 2, b.y - 2, 8, 3);
+          ctx.fillRect(b.x - 2, b.y - 2, 3, 8);
+
+          // Label
+          ctx.fillStyle = 'rgba(12, 17, 29, 0.85)';
+          ctx.fillRect(b.x, b.y - 18, 70, 16);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText(`${b.id} ${b.conf}`, b.x + 4, b.y - 6);
+        });
+      }
+
+      requestAnimationFrame(drawHudOverlay);
+    }
+
+    drawHudOverlay();
+  </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Video Ingestion & Processing</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body" style="max-width: 800px; margin: 0 auto;">
+        <div class="vs-card" style="border-color: var(--vs-border-cyan); margin-bottom: 24px; text-align: center; padding: 36px 24px;">
+          <div style="font-size: 32px; margin-bottom: 10px;">🛡️</div>
+          <h1 style="font-size: 26px; font-weight: 800; color: var(--vs-text-white); margin-bottom: 8px;">
+            VISION SENSE Video Ingestion
+          </h1>
+          <p style="font-size: 14px; color: var(--vs-text-body); max-width: 600px; margin: 0 auto;">
+            Upload CCTV footage or video files to run YOLOv8 object detection, ByteTrack tracking, crowd safety density calculation, and MMAction2 action recognition.
+          </p>
+        </div>
+
+        <div class="vs-card" id="upload-card">
+          <div id="uploadForm">
+            <div style="border: 2px dashed var(--vs-border-cyan); border-radius: var(--vs-radius-md); padding: 48px 24px; text-align: center; cursor: pointer; background: var(--vs-bg-surface); transition: var(--vs-transition);" id="dropzone" onclick="document.getElementById('fileInput').click()">
+              <div style="font-size: 40px; margin-bottom: 12px;">📂</div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--vs-text-white); margin-bottom: 6px;">Drag and Drop Video File (MP4)</h3>
+              <p style="font-size: 13px; color: var(--vs-text-muted);">or click to browse local files</p>
+              <input type="file" id="fileInput" accept=".mp4,.avi,.mov,.mkv" style="display: none;" />
+            </div>
+
+            <div id="fileIndicator" style="display: none; align-items: center; gap: 10px; background: rgba(16,185,129,0.1); border: 1px solid var(--vs-status-normal-border); color: var(--vs-status-normal); padding: 12px 18px; border-radius: var(--vs-radius-sm); margin-top: 20px; font-weight: 600; font-size: 13px;">
+              <span id="fileName">No file selected</span>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+              <button class="vs-btn" id="startBtn" disabled onclick="startProcessingSimulation()" style="flex: 1;">
+                Run Vision Sense Pipeline →
+              </button>
+              <a href="/dashboard" class="vs-btn vs-btn-outline">Go to Dashboard</a>
+            </div>
+          </div>
+
+          <!-- Processing Progress Simulation -->
+          <div id="simulationBoard" style="display: none; margin-top: 10px;">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>⚡</span>
+                <span id="status">Executing AI Detection Pipeline</span>
+              </div>
+            </div>
+
+            <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+              <div id="progressBarFill" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--vs-cyan), var(--vs-blue)); transition: width 0.3s ease;"></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="vs-card" style="padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px;" id="step1">
+                <span class="mono" style="color: var(--vs-cyan);">[1]</span>
+                <span>Ingesting Video Stream & Decoding Frames...</span>
+              </div>
+              <div class="vs-card" style="padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px;" id="step2">
+                <span class="mono" style="color: var(--vs-cyan);">[2]</span>
+                <span>YOLOv8 Person Detection & Feature Extraction...</span>
+              </div>
+              <div class="vs-card" style="padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px;" id="step3">
+                <span class="mono" style="color: var(--vs-cyan);">[3]</span>
+                <span>ByteTrack Multi-Object Trajectory Association...</span>
+              </div>
+              <div class="vs-card" style="padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px;" id="step4">
+                <span class="mono" style="color: var(--vs-cyan);">[4]</span>
+                <span>MMAction2 Violence & Spatio-Temporal Action Scan...</span>
+              </div>
+              <div class="vs-card" style="padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 12px;" id="step5">
+                <span class="mono" style="color: var(--vs-cyan);">[5]</span>
+                <span>Compiling Threat Telemetry & Risk Metrics...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('dashboard', 'Video Ingestion & Processing Pipeline');
+
+    const fileInput = document.getElementById('fileInput');
+    const startBtn = document.getElementById('startBtn');
+    const fileIndicator = document.getElementById('fileIndicator');
+    const fileNameText = document.getElementById('fileName');
+    let selectedFile = null;
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        selectedFile = file;
+        fileNameText.textContent = `✓ Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+        fileIndicator.style.display = 'flex';
+        startBtn.removeAttribute('disabled');
+      }
+    });
+
+    async function startProcessingSimulation() {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      document.getElementById('uploadForm').style.display = 'none';
+      document.getElementById('simulationBoard').style.display = 'block';
+      const progressFill = document.getElementById('progressBarFill');
+
+      progressFill.style.width = '20%';
+      document.getElementById('step1').style.borderColor = 'var(--vs-border-cyan)';
+
+      try {
+        fetch('/api/video/upload', { method: 'POST', body: formData }).catch(e => console.warn(e));
+      } catch (e) {}
+
+      setTimeout(() => {
+        progressFill.style.width = '40%';
+        document.getElementById('step2').style.borderColor = 'var(--vs-border-cyan)';
+      }, 1200);
+
+      setTimeout(() => {
+        progressFill.style.width = '65%';
+        document.getElementById('step3').style.borderColor = 'var(--vs-border-cyan)';
+      }, 2400);
+
+      setTimeout(() => {
+        progressFill.style.width = '85%';
+        document.getElementById('step4').style.borderColor = 'var(--vs-border-cyan)';
+      }, 3600);
+
+      setTimeout(() => {
+        progressFill.style.width = '100%';
+        document.getElementById('step5').style.borderColor = 'var(--vs-border-cyan)';
+      }, 4800);
+
+      setTimeout(() => {
+        window.location = '/analyze';
+      }, 6000);
+    }
+  </script>
+</body>
+</html>

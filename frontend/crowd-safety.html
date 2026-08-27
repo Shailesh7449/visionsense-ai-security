@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Crowd Safety & Density Analytics</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <!-- TOP STATS -->
+        <div class="vs-grid-4" style="margin-bottom: 24px;">
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Current Crowd Count</span>
+              <span>👥</span>
+            </div>
+            <div class="vs-metric-value" id="crowd-current">12</div>
+            <div class="vs-metric-subtext">
+              <span class="vs-tag vs-tag-success" id="crowd-level-badge">LOW CONGESTION</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Safety Threshold</span>
+              <span>⚠️</span>
+            </div>
+            <div class="vs-metric-value" id="crowd-threshold">20</div>
+            <div class="vs-metric-subtext">
+              <span>Max allowed before alert</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Density Utilization</span>
+              <span>📊</span>
+            </div>
+            <div class="vs-metric-value" id="crowd-density-pct">60%</div>
+            <div class="vs-metric-subtext">
+              <span>Safe operational margin</span>
+            </div>
+          </div>
+
+          <div class="vs-metric-card">
+            <div class="vs-metric-label">
+              <span>Peak Crowd Today</span>
+              <span>📈</span>
+            </div>
+            <div class="vs-metric-value">74</div>
+            <div class="vs-metric-subtext mono">
+              <span>19:00 - 20:00 Peak</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS GRID -->
+        <div class="vs-grid-2" style="margin-bottom: 24px;">
+          <!-- Hourly Footfall Trend -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>📈</span>
+                <span>Crowd Inflow & Outflow Trend</span>
+              </div>
+            </div>
+            <div style="height: 280px; position: relative;">
+              <canvas id="footfall-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Zone Distribution -->
+          <div class="vs-card">
+            <div class="vs-card-header">
+              <div class="vs-card-title">
+                <span>📍</span>
+                <span>Zone Density Breakdown</span>
+              </div>
+            </div>
+            <div style="height: 280px; position: relative;">
+              <canvas id="zone-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE ZONE TABLE -->
+        <div class="vs-card">
+          <div class="vs-card-header">
+            <div class="vs-card-title">
+              <span>🏢</span>
+              <span>Zone Surveillance Telemetry</span>
+            </div>
+          </div>
+
+          <div class="vs-table-wrap">
+            <table class="vs-table">
+              <thead>
+                <tr>
+                  <th>Surveillance Zone</th>
+                  <th>Current Occupancy</th>
+                  <th>Avg Dwell Time</th>
+                  <th>Total Visits Today</th>
+                  <th>Density Status</th>
+                </tr>
+              </thead>
+              <tbody id="zone-table-body">
+                <tr>
+                  <td><strong>Entrance / Foyer</strong></td>
+                  <td class="mono">4 persons</td>
+                  <td class="mono">22.0s</td>
+                  <td class="mono">304</td>
+                  <td><span class="vs-tag vs-tag-success">NORMAL FLOW</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Front of House (FOH)</strong></td>
+                  <td class="mono">15 persons</td>
+                  <td class="mono">144.0s</td>
+                  <td class="mono">128</td>
+                  <td><span class="vs-tag vs-tag-info">MODERATE</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Beauty & Cosmetics Shelf</strong></td>
+                  <td class="mono">12 persons</td>
+                  <td class="mono">152.0s</td>
+                  <td class="mono">94</td>
+                  <td><span class="vs-tag vs-tag-info">MODERATE</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Checkout / Billing Counters</strong></td>
+                  <td class="mono">3 persons</td>
+                  <td class="mono">65.0s</td>
+                  <td class="mono">38</td>
+                  <td><span class="vs-tag vs-tag-success">NORMAL FLOW</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('crowd', 'Crowd Safety & Density Telemetry');
+
+    // Chart.js Setup
+    const ctxFootfall = document.getElementById('footfall-chart').getContext('2d');
+    new Chart(ctxFootfall, {
+      type: 'line',
+      data: {
+        labels: ['10:00', '12:00', '14:00', '16:00', '18:00', '19:00', '20:00', '21:00'],
+        datasets: [
+          {
+            label: 'Crowd Entries',
+            data: [18, 32, 20, 30, 42, 74, 52, 24],
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.15)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Crowd Exits',
+            data: [15, 28, 18, 25, 38, 66, 48, 22],
+            borderColor: '#8b5cf6',
+            backgroundColor: 'transparent',
+            borderDash: [5, 5],
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8' } } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+
+    const ctxZone = document.getElementById('zone-chart').getContext('2d');
+    new Chart(ctxZone, {
+      type: 'doughnut',
+      data: {
+        labels: ['Entrance Foyer', 'Front of House', 'Beauty Shelves', 'Checkout Counter'],
+        datasets: [{
+          data: [4, 15, 12, 3],
+          backgroundColor: ['#06b6d4', '#3b82f6', '#8b5cf6', '#10b981'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } } }
+      }
+    });
+  </script>
+</body>
+</html>

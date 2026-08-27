@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VISION SENSE — Camera Matrix & CCTV Management</title>
+  <link rel="stylesheet" href="/vision-sense.css" />
+</head>
+<body>
+  <div class="vs-app-layout">
+    <div id="sidebar-mount"></div>
+
+    <main class="vs-main-content">
+      <div id="topbar-mount"></div>
+
+      <div class="vs-page-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--vs-text-white);">CCTV Camera Matrix</h1>
+            <p style="font-size: 13px; color: var(--vs-text-muted);">Real-time stream telemetry, network diagnostics, and RTSP connection management.</p>
+          </div>
+          <button class="vs-btn" id="btn-add-camera" onclick="openAddCameraModal()">
+            <span>➕</span> Add IP / CCTV Camera
+          </button>
+        </div>
+
+        <!-- CAMERA GRID -->
+        <div class="vs-grid-3" id="camera-grid">
+          <!-- Camera 1 -->
+          <div class="vs-card" id="card-cam-01">
+            <div style="position: relative; height: 180px; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000; margin-bottom: 16px;">
+              <video src="/tracked_store.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div style="position: absolute; top: 10px; left: 10px;">
+                <span class="vs-tag vs-tag-success">ONLINE (30 FPS)</span>
+              </div>
+              <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 3px 8px; border-radius: 4px; font-size: 10px; color: var(--vs-cyan);" class="mono">
+                192.168.1.101:554
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--vs-text-white);">CAM-01: South Entrance</h3>
+                <div style="font-size: 12px; color: var(--vs-text-muted);">Main Entrance / Foyer</div>
+              </div>
+              <span class="vs-tag vs-tag-info">12 PERSONS</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--vs-border-subtle); padding-top: 12px;">
+              <span class="mono" style="font-size: 11px; color: var(--vs-text-muted);">rtsp://***:***@192.168.1.101/live</span>
+              <div style="display: flex; gap: 8px;">
+                <a href="/analyze" class="vs-btn vs-btn-outline vs-btn-sm">Monitor</a>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="editCamera('cam-01')">Edit</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera 2 -->
+          <div class="vs-card" id="card-cam-02">
+            <div style="position: relative; height: 180px; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000; margin-bottom: 16px;">
+              <video src="/tracked_store.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div style="position: absolute; top: 10px; left: 10px;">
+                <span class="vs-tag vs-tag-success">ONLINE (25 FPS)</span>
+              </div>
+              <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 3px 8px; border-radius: 4px; font-size: 10px; color: var(--vs-cyan);" class="mono">
+                192.168.1.102:554
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--vs-text-white);">CAM-02: Makeup & Beauty</h3>
+                <div style="font-size: 12px; color: var(--vs-text-muted);">Floor 1 - Zone B</div>
+              </div>
+              <span class="vs-tag vs-tag-info">6 PERSONS</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--vs-border-subtle); padding-top: 12px;">
+              <span class="mono" style="font-size: 11px; color: var(--vs-text-muted);">rtsp://***:***@192.168.1.102/live</span>
+              <div style="display: flex; gap: 8px;">
+                <a href="/analyze" class="vs-btn vs-btn-outline vs-btn-sm">Monitor</a>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="editCamera('cam-02')">Edit</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camera 3 -->
+          <div class="vs-card" id="card-cam-03">
+            <div style="position: relative; height: 180px; border-radius: var(--vs-radius-sm); overflow: hidden; background: #000; margin-bottom: 16px;">
+              <video src="/tracked_store.mp4" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <div style="position: absolute; top: 10px; left: 10px;">
+                <span class="vs-tag vs-tag-success">ONLINE (30 FPS)</span>
+              </div>
+              <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 3px 8px; border-radius: 4px; font-size: 10px; color: var(--vs-cyan);" class="mono">
+                192.168.1.103:554
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; color: var(--vs-text-white);">CAM-03: Checkout Counter</h3>
+                <div style="font-size: 12px; color: var(--vs-text-muted);">Billing Point / Registers</div>
+              </div>
+              <span class="vs-tag vs-tag-info">3 PERSONS</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--vs-border-subtle); padding-top: 12px;">
+              <span class="mono" style="font-size: 11px; color: var(--vs-text-muted);">rtsp://***:***@192.168.1.103/live</span>
+              <div style="display: flex; gap: 8px;">
+                <a href="/analyze" class="vs-btn vs-btn-outline vs-btn-sm">Monitor</a>
+                <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="editCamera('cam-03')">Edit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ADD / EDIT CAMERA MODAL -->
+  <div class="vs-modal-backdrop" id="camera-modal">
+    <div class="vs-modal">
+      <div class="vs-card-header">
+        <div class="vs-card-title">
+          <span>🎥</span>
+          <span id="modal-title">Register New CCTV Stream</span>
+        </div>
+        <button class="vs-btn vs-btn-outline vs-btn-sm" onclick="closeCameraModal()">✕</button>
+      </div>
+
+      <form id="camera-form" onsubmit="handleCameraSubmit(event)" style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">Camera Identifier / Name</label>
+          <input type="text" class="vs-input" id="cam-name-input" placeholder="e.g. North Gate Surveillance Cam" required />
+        </div>
+
+        <div>
+          <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">Physical Location / Zone</label>
+          <input type="text" class="vs-input" id="cam-loc-input" placeholder="e.g. Floor 2 - Loading Bay" required />
+        </div>
+
+        <div>
+          <label style="font-size: 12px; color: var(--vs-text-muted); display: block; margin-bottom: 6px;">RTSP Stream URL (Credentials will be masked)</label>
+          <input type="text" class="vs-input" id="cam-rtsp-input" placeholder="rtsp://admin:pass@192.168.1.150:554/live/ch0" required />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+          <button type="button" class="vs-btn vs-btn-outline" onclick="closeCameraModal()">Cancel</button>
+          <button type="submit" class="vs-btn">Save Camera</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/navbar-sidebar.js"></script>
+  <script>
+    VisionSenseNav.render('cameras', 'CCTV Camera Matrix & IP Streams');
+
+    function openAddCameraModal() {
+      document.getElementById('modal-title').textContent = 'Register New CCTV Stream';
+      document.getElementById('cam-name-input').value = '';
+      document.getElementById('cam-loc-input').value = '';
+      document.getElementById('cam-rtsp-input').value = '';
+      document.getElementById('camera-modal').classList.add('active');
+    }
+
+    function closeCameraModal() {
+      document.getElementById('camera-modal').classList.remove('active');
+    }
+
+    function editCamera(camId) {
+      document.getElementById('modal-title').textContent = `Edit Camera (${camId.toUpperCase()})`;
+      document.getElementById('cam-name-input').value = 'South Entrance Cam';
+      document.getElementById('cam-loc-input').value = 'Main Entrance';
+      document.getElementById('cam-rtsp-input').value = 'rtsp://admin:secr3t@192.168.1.101:554/live/ch0';
+      document.getElementById('camera-modal').classList.add('active');
+    }
+
+    async function handleCameraSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('cam-name-input').value;
+      const location = document.getElementById('cam-loc-input').value;
+      const rtsp_url = document.getElementById('cam-rtsp-input').value;
+
+      try {
+        const res = await fetch('/api/cameras', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, location, rtsp_url })
+        });
+        if (res.ok) {
+          alert(`✓ Camera "${name}" registered successfully.`);
+          closeCameraModal();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  </script>
+</body>
+</html>
