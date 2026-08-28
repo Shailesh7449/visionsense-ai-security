@@ -15,11 +15,16 @@ data/output/
 # python
 __pycache__/
 *.py[cod]
-.venv/
-venv/
-venv312/
 .env
-*.egg-info/
+.env.production
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.pt
 .pytest_cache/
 
 # os / editor
@@ -29,3 +34,9 @@ venv312/
 data/sales/
 *.db
 data/store.db
+
+# added per requirements
+node_modules/
+venv/
+*.pth
+*.onnx

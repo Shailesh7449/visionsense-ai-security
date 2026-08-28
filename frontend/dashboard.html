@@ -262,24 +262,37 @@
       }
     }
 
-    // Live Metrics Polling
+    // WebSocket connection for real-time AI telemetry
+    let ws = new WebSocket('ws://localhost:8000/ws/telemetry/demo');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if(data.error) return;
+      
+      const count = data.people_count || 0;
+      document.getElementById('dash-people-count').textContent = count;
+      
+      let crowdLevel = 'LOW';
+      if(count > 10) crowdLevel = 'HIGH';
+      else if (count > 5) crowdLevel = 'MEDIUM';
+
+      const crowdTag = document.getElementById('dash-crowd-tag');
+      crowdTag.textContent = `CROWD: ${crowdLevel}`;
+      crowdTag.className = `vs-tag ${crowdLevel === 'HIGH' ? 'vs-tag-warning' : 'vs-tag-success'}`;
+    };
+    
+    // Live Metrics Polling for other system status
     async function pollDashboardMetrics() {
       try {
         const res = await fetch('/api/system/status');
         if (res.ok) {
           const data = await res.json();
           if (data.metrics) {
-            document.getElementById('dash-people-count').textContent = data.metrics.people_detected;
             document.getElementById('dash-violence-status').textContent = data.metrics.violence_status;
             document.getElementById('dash-violence-conf').textContent = `${Math.round(data.metrics.violence_confidence * 100)}%`;
             document.getElementById('dash-active-alerts').textContent = data.metrics.active_alerts;
             document.getElementById('dash-cameras-online').textContent = `${data.metrics.cameras_online} / ${data.metrics.total_cameras}`;
             document.getElementById('val-cctv-online').textContent = `${data.metrics.cameras_online} / ${data.metrics.total_cameras} ONLINE`;
             
-            const crowdTag = document.getElementById('dash-crowd-tag');
-            crowdTag.textContent = `CROWD: ${data.metrics.crowd_level}`;
-            crowdTag.className = `vs-tag ${data.metrics.crowd_level === 'HIGH' ? 'vs-tag-warning' : 'vs-tag-success'}`;
-
             if (data.risk_level && coreInstance) {
               coreInstance.setStatus(data.risk_level);
               document.getElementById('val-threat-level').textContent = data.risk_level;
@@ -287,7 +300,7 @@
           }
         }
       } catch (e) {
-        console.warn('Dashboard polling:', e);
+        // Mute errors for missing mock endpoint
       }
     }
 

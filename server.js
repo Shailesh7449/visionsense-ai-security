@@ -271,79 +271,9 @@ function startSessionProcessing(sessionId) {
 
   session.status = 'RUNNING';
 
-  const zoneNames = ['entrance', 'foh', 'shelf_top', 'shelf_bottom', 'cash_counter'];
-
-  session.interval_timer = setInterval(() => {
-    if (session.status !== 'RUNNING') {
-      clearInterval(session.interval_timer);
-      return;
-    }
-
-    session.processed_frames += 1;
-    const fNum = session.processed_frames;
-    
-    // Dynamic simulated persons detection state based on source
-    let basePeople = 3;
-    if (session.source_type === 'cctv') basePeople = 5;
-    if (session.source_type === 'webcam') basePeople = 1;
-    if (session.source_type === 'demo') basePeople = 4;
-    
-    const count = Math.max(1, basePeople + Math.floor(Math.sin(fNum / 10) * 2));
-    const crowdLevel = count >= 6 ? 'High' : (count >= 3 ? 'Medium' : 'Low');
-
-    const detectedPersons = [];
-    for (let i = 0; i < count; i++) {
-      const trackId = (i + 1) * 7 + (fNum % 5);
-      const zone = zoneNames[i % zoneNames.length];
-      const confidence = parseFloat((0.82 + ((i * 3 + fNum) % 15) * 0.01).toFixed(2));
-      const x = 50 + (i * 120 + (fNum * 4) % 200) % 500;
-      const y = 80 + (i * 40 + (fNum * 2) % 100) % 300;
-      const w = 60 + (i % 3) * 10;
-      const h = 130 + (i % 3) * 15;
-
-      detectedPersons.push({
-        track_id: trackId,
-        confidence,
-        zone,
-        bbox: [x, y, w, h],
-        dwell_s: (fNum % 60) + i * 15
-      });
-    }
-
-    session.current_frame_data = {
-      frame_number: fNum,
-      timestamp: new Date().toISOString(),
-      people_count: count,
-      crowd_level: crowdLevel,
-      active_tracks: count,
-      detected_persons: detectedPersons,
-      processing_status: 'YOLOv8 + ByteTrack active'
-    };
-
-    // Update global metrics live occupancy
-    defaultMetrics.current_inside = count;
-
-    // Check completion for finite video uploads/demo
-    if (session.total_frames > 0 && session.processed_frames >= session.total_frames) {
-      session.status = 'COMPLETED';
-      session.end_time = new Date().toISOString();
-      clearInterval(session.interval_timer);
-
-      // Create output file link
-      if (session.file_path && fs.existsSync(session.file_path)) {
-        const outName = `annotated_${path.basename(session.file_path, path.extname(session.file_path))}.mp4`;
-        const outPath = path.join(OUTPUTS_DIR, outName);
-        try {
-          fs.copyFileSync(session.file_path, outPath);
-          session.video_url = `/api/video/file/${outName}`;
-        } catch (e) {
-          session.video_url = `/api/video/file/${path.basename(session.file_path)}`;
-        }
-      } else {
-        session.video_url = `/tracked_store.mp4`;
-      }
-    }
-  }, 200);
+  // We no longer simulate telemetry. 
+  // The frontend will connect to the Python AI service via WebSockets 
+  // and manage video playback locally.
 }
 
 function stopDetectionSession(sessionId) {
@@ -379,6 +309,7 @@ app.post('/api/video/upload', upload.single('file'), (req, res) => {
       status: "ok",
       message: "Video uploaded and detection session initiated.",
       session_id: session.session_id,
+      stored_filename: req.file.filename,
       session: {
         session_id: session.session_id,
         source_type: session.source_type,

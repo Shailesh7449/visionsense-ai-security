@@ -108,9 +108,9 @@
                   <span>CROWD:</span>
                   <strong id="hud-people-val" style="color: var(--vs-cyan);">12 PERSONS</strong>
                 </div>
-                <div class="vs-hud-badge" id="hud-violence-badge" style="border-color: var(--vs-status-normal-border); color: var(--vs-status-normal);">
+                <div class="vs-hud-badge" id="hud-violence-badge" style="border-color: var(--vs-border-subtle); color: var(--vs-text-muted);">
                   <span>MMACTION2:</span>
-                  <strong id="hud-violence-val">NORMAL (92% SAFE)</strong>
+                  <strong id="hud-violence-val">NOT CONNECTED</strong>
                 </div>
               </div>
             </div>
@@ -160,11 +160,11 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
                   <span style="font-size: 13px; color: var(--vs-text-muted);">Action Recognition Model</span>
-                  <span class="mono" style="font-size: 12px; color: var(--vs-cyan);">MMAction2 SlowFast</span>
+                  <span class="mono" style="font-size: 12px; color: var(--vs-text-muted);">Not Connected</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--vs-border-subtle);">
                   <span style="font-size: 13px; color: var(--vs-text-muted);">Threat Risk Rating</span>
-                  <span class="vs-tag vs-tag-success" id="tel-threat-rating">NORMAL</span>
+                  <span class="vs-tag" style="background: transparent; color: var(--vs-text-muted); border-color: var(--vs-border-subtle);" id="tel-threat-rating">N/A</span>
                 </div>
               </div>
             </div>
@@ -179,29 +179,7 @@
               </div>
 
               <div id="live-event-stream" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">
-                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-cyan);">
-                  <div style="display: flex; justify-content: space-between;">
-                    <strong style="color: var(--vs-text-white);">Track #21 • Zone Entered</strong>
-                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">Just now</span>
-                  </div>
-                  <div style="color: var(--vs-text-body); font-size: 11px;">Track ID 21 crossed entrance boundary line.</div>
-                </div>
-
-                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-status-normal);">
-                  <div style="display: flex; justify-content: space-between;">
-                    <strong style="color: var(--vs-text-white);">MMAction2 Inference</strong>
-                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">2s ago</span>
-                  </div>
-                  <div style="color: var(--vs-text-body); font-size: 11px;">Scanned 32-frame buffer: Standing / Walking (94%).</div>
-                </div>
-
-                <div style="background: var(--vs-bg-surface); padding: 10px 12px; border-radius: 6px; font-size: 12px; border-left: 3px solid var(--vs-cyan);">
-                  <div style="display: flex; justify-content: space-between;">
-                    <strong style="color: var(--vs-text-white);">Track #17 • Movement Vector</strong>
-                    <span class="mono" style="color: var(--vs-text-muted); font-size: 10px;">5s ago</span>
-                  </div>
-                  <div style="color: var(--vs-text-body); font-size: 11px;">Dwell time 42s in Beauty Zone.</div>
-                </div>
+                <!-- Live events will be populated here -->
               </div>
             </div>
           </div>
@@ -219,6 +197,10 @@
     let isRunning = true;
     let webcamStream = null;
     let pollInterval = null;
+    let ws = null;
+    let latestDetections = [];
+    let latestVideoWidth = 1920;
+    let latestVideoHeight = 1080;
 
     const mainVideo = document.getElementById('main-video-player');
     const webcamPlayer = document.getElementById('webcam-player');
@@ -249,6 +231,7 @@
           mainVideo.src = '/tracked_store.mp4';
           mainVideo.play();
           document.getElementById('hud-camera-label').textContent = 'DEMO BENCHMARK STREAM';
+          connectTelemetry('demo');
         }
       }
     }
@@ -285,8 +268,10 @@
         if (res.ok) {
           document.getElementById('upload-status-text').textContent = `✓ Uploaded ${file.name}. Starting AI pipeline...`;
           mainVideo.src = `/api/video/file/${data.stored_filename}`;
+          mainVideo.load();
           mainVideo.play();
           document.getElementById('hud-camera-label').textContent = `UPLOAD: ${file.name}`;
+          connectTelemetry(data.stored_filename);
         }
       } catch (e) {
         console.error(e);
@@ -366,44 +351,80 @@
       VisionSenseNav.syncSystemStatus();
     }
 
-    // Dynamic HUD Bounding Boxes simulation on video
+    function connectTelemetry(filename) {
+      if (ws) {
+        ws.close();
+      }
+      latestDetections = [];
+      ws = new WebSocket(`ws://localhost:8000/ws/telemetry/${filename}`);
+      
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          console.error("Telemetry Error:", data.error);
+          return;
+        }
+        latestDetections = data.detections || [];
+        if (data.video_width && data.video_height) {
+          latestVideoWidth = data.video_width;
+          latestVideoHeight = data.video_height;
+        }
+        
+        // Update HUD
+        document.getElementById('hud-people-val').textContent = `${data.people_count} PERSONS`;
+        document.getElementById('tel-tracked-count').textContent = data.people_count;
+        document.getElementById('hud-fps').textContent = `10 FPS`;
+      };
+      
+      ws.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+      };
+    }
+
+    // Dynamic HUD Bounding Boxes real telemetry on video
     function drawHudOverlay() {
       if (!canvas) return;
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (isRunning) {
-        // Draw synthetic bounding boxes for demo visualization
-        const t = Date.now() / 1000;
-        const boxes = [
-          { x: (Math.sin(t * 0.5) * 0.15 + 0.3) * canvas.width, y: 0.35 * canvas.height, w: 60, h: 120, id: 'ID-21', conf: '0.94' },
-          { x: (Math.cos(t * 0.4) * 0.12 + 0.55) * canvas.width, y: 0.40 * canvas.height, w: 55, h: 110, id: 'ID-17', conf: '0.88' },
-          { x: 0.75 * canvas.width, y: 0.45 * canvas.height, w: 50, h: 100, id: 'ID-09', conf: '0.91' }
-        ];
+      if (isRunning && latestDetections.length > 0) {
+        // Use actual video dimensions for accurate scaling
+        const srcWidth = mainVideo.videoWidth || latestVideoWidth || 1280;
+        const srcHeight = mainVideo.videoHeight || latestVideoHeight || 720;
+        
+        const scaleX = canvas.width / srcWidth;
+        const scaleY = canvas.height / srcHeight;
 
-        boxes.forEach(b => {
+        latestDetections.forEach(b => {
+          const x = b.x1 * scaleX;
+          const y = b.y1 * scaleY;
+          const w = (b.x2 - b.x1) * scaleX;
+          const h = (b.y2 - b.y1) * scaleY;
+
           ctx.strokeStyle = '#06b6d4';
           ctx.lineWidth = 2;
-          ctx.strokeRect(b.x, b.y, b.w, b.h);
+          ctx.strokeRect(x, y, w, h);
 
           // Corner cyber accents
           ctx.fillStyle = '#06b6d4';
-          ctx.fillRect(b.x - 2, b.y - 2, 8, 3);
-          ctx.fillRect(b.x - 2, b.y - 2, 3, 8);
+          ctx.fillRect(x - 2, y - 2, 8, 3);
+          ctx.fillRect(x - 2, y - 2, 3, 8);
 
           // Label
           ctx.fillStyle = 'rgba(12, 17, 29, 0.85)';
-          ctx.fillRect(b.x, b.y - 18, 70, 16);
+          ctx.fillRect(x, y - 18, 70, 16);
           ctx.fillStyle = '#38bdf8';
           ctx.font = '10px JetBrains Mono, monospace';
-          ctx.fillText(`${b.id} ${b.conf}`, b.x + 4, b.y - 6);
+          ctx.fillText(`ID-${b.track_id} ${(b.confidence * 100).toFixed(0)}%`, x + 4, y - 6);
         });
       }
 
       requestAnimationFrame(drawHudOverlay);
     }
 
+    // Initialize
+    connectTelemetry('demo');
     drawHudOverlay();
   </script>
 </body>
